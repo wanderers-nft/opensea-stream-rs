@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use ethnum::U256;
+use ethers::prelude::{H256, U256};
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
@@ -82,7 +82,7 @@ pub struct ItemListedData {
     pub context: Context,
 
     pub event_timestamp: DateTime<Utc>,
-    #[serde(with = "ethnum::serde::decimal")]
+    #[serde(with = "u256_fromstr_radix_10")]
     pub base_price: U256,
     pub expiration_date: DateTime<Utc>,
     pub is_private: bool,
@@ -106,7 +106,7 @@ pub struct ItemSoldData {
     pub maker: Address,
     pub payment_token: PaymentToken,
     pub quantity: u64,
-    #[serde(with = "ethnum::serde::decimal")]
+    #[serde(with = "u256_fromstr_radix_10")]
     pub sale_price: U256,
     pub taker: Address,
     pub transaction: Transaction,
@@ -157,7 +157,7 @@ pub struct ItemReceivedOfferData {
     pub context: Context,
 
     pub event_timestamp: DateTime<Utc>,
-    #[serde(with = "ethnum::serde::decimal")]
+    #[serde(with = "u256_fromstr_radix_10")]
     pub base_price: U256,
     pub created_date: DateTime<Utc>,
     pub expiration_date: DateTime<Utc>,
@@ -173,7 +173,7 @@ pub struct ItemReceivedBidData {
     pub context: Context,
 
     pub event_timestamp: DateTime<Utc>,
-    #[serde(with = "ethnum::serde::decimal")]
+    #[serde(with = "u256_fromstr_radix_10")]
     pub base_price: U256,
     pub created_date: DateTime<Utc>,
     pub expiration_date: DateTime<Utc>,
@@ -191,7 +191,7 @@ pub enum ListingType {
 }
 
 #[derive(Debug)]
-pub struct Address(String);
+pub struct Address(ethers::abi::Address);
 
 impl<'de> Deserialize<'de> for Address {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -200,7 +200,7 @@ impl<'de> Deserialize<'de> for Address {
     {
         #[derive(Deserialize)]
         struct Inner {
-            address: String,
+            address: ethers::abi::Address,
         }
 
         Deserialize::deserialize(deserializer).map(|v: Inner| Address(v.address))
@@ -209,16 +209,54 @@ impl<'de> Deserialize<'de> for Address {
 
 #[derive(Deserialize, Debug)]
 pub struct Transaction {
-    pub hash: String,
+    pub hash: H256,
     pub timestamp: DateTime<Utc>,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct PaymentToken {
-    pub address: String,
+    pub address: ethers::abi::Address,
     pub decimals: u64,
     pub eth_price: f64,
     pub name: String,
     pub symbol: String,
     pub usd_price: f64,
+}
+
+// h/t: meetmangukiya (https://gist.github.com/meetmangukiya/40cad17bcb7d3196d33b072a3500fac7)
+mod u256_fromstr_radix_10 {
+    use super::*;
+    use serde::{de::Visitor, Deserializer};
+    use std::fmt;
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<U256, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct Helper;
+
+        impl<'de> Visitor<'de> for Helper {
+            type Value = U256;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a string")
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                U256::from_dec_str(value).map_err(serde::de::Error::custom)
+            }
+        }
+
+        deserializer.deserialize_str(Helper)
+    }
+
+    // pub fn serialize<S>(value: &U256, serializer: S) -> Result<S::Ok, S::Error>
+    // where
+    //     S: Serializer,
+    // {
+    //     serializer.collect_str(&value)
+    // }
 }
