@@ -1,5 +1,8 @@
+use std::str::FromStr;
+
 use chrono::{DateTime, Utc};
 use ethers::prelude::{H256, U256};
+use serde::de::Error;
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
@@ -47,10 +50,48 @@ impl<'de> Deserialize<'de> for Collection {
 
 #[derive(Deserialize, Debug)]
 pub struct Item {
-    pub nft_id: String,
+    pub nft_id: NftId,
     pub permalink: String,
     pub chain: Chain,
     pub metadata: Metadata,
+}
+
+#[derive(Debug)]
+pub struct NftId {
+    pub network: Chain,
+    pub address: Address,
+    pub id: U256,
+}
+
+impl<'de> Deserialize<'de> for NftId {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s: &str = Deserialize::deserialize(deserializer)?;
+        let mut parts = s.splitn(3, '/').fuse();
+
+        let network = parts
+            .next()
+            .and_then(|s| Chain::from_str(s).ok())
+            .ok_or_else(|| D::Error::custom("expected network"))?;
+
+        let address = parts
+            .next()
+            .and_then(|s| ethers::abi::Address::from_str(s).ok().map(Address))
+            .ok_or_else(|| D::Error::custom("expected address"))?;
+
+        let id = parts
+            .next()
+            .and_then(|s| U256::from_dec_str(s).ok())
+            .ok_or_else(|| D::Error::custom("expected id"))?;
+
+        Ok(NftId {
+            network,
+            address,
+            id,
+        })
+    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -65,6 +106,23 @@ pub enum Chain {
     Rinkeby,
     Mumbai,
     Baobab,
+}
+
+impl FromStr for Chain {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "ethereum" => Ok(Chain::Ethereum),
+            "matic" => Ok(Chain::Polygon),
+            "klaytn" => Ok(Chain::Klaytn),
+            "solana" => Ok(Chain::Solana),
+            "rinkeby" => Ok(Chain::Rinkeby),
+            "mumbai" => Ok(Chain::Mumbai),
+            "baobab" => Ok(Chain::Baobab),
+            _ => Err(()),
+        }
+    }
 }
 
 #[derive(Deserialize, Debug)]
