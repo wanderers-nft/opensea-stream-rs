@@ -1,18 +1,19 @@
+use std::fmt;
 use std::str::FromStr;
 
 use chrono::{DateTime, Utc};
 use ethers::prelude::{H256, U256};
 use serde::de::Error;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct StreamEvent {
     pub sent_at: DateTime<Utc>,
     #[serde(flatten)]
     pub payload: Payload,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "event_type", content = "payload")]
 #[serde(rename_all = "snake_case")]
 pub enum Payload {
@@ -25,14 +26,31 @@ pub enum Payload {
     ItemReceivedBid(ItemReceivedBidData),
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Context {
     pub collection: Collection,
     pub item: Item,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Collection(String);
+
+impl Serialize for Collection {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[derive(Serialize)]
+        struct Inner {
+            slug: String,
+        }
+
+        Inner {
+            slug: self.0.clone(),
+        }
+        .serialize(serializer)
+    }
+}
 
 impl<'de> Deserialize<'de> for Collection {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -48,7 +66,7 @@ impl<'de> Deserialize<'de> for Collection {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Item {
     pub nft_id: NftId,
     pub permalink: String,
@@ -56,11 +74,20 @@ pub struct Item {
     pub metadata: Metadata,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct NftId {
     pub network: Chain,
     pub address: Address,
     pub id: U256,
+}
+
+impl Serialize for NftId {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        format!("{}/{}/{}", self.network, self.address.0, self.id).serialize(serializer)
+    }
 }
 
 impl<'de> Deserialize<'de> for NftId {
@@ -94,7 +121,7 @@ impl<'de> Deserialize<'de> for NftId {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 #[serde(tag = "name", rename_all = "lowercase")]
 pub enum Chain {
     Ethereum,
@@ -125,7 +152,25 @@ impl FromStr for Chain {
     }
 }
 
-#[derive(Deserialize, Debug)]
+impl fmt::Display for Chain {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Chain::Ethereum => "ethereum",
+                Chain::Polygon => "matic",
+                Chain::Klaytn => "klaytn",
+                Chain::Solana => "solana",
+                Chain::Rinkeby => "rinkeby",
+                Chain::Mumbai => "mumbai",
+                Chain::Baobab => "baobab",
+            }
+        )
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Metadata {
     pub name: String,
     pub description: Option<String>,
@@ -134,7 +179,7 @@ pub struct Metadata {
     pub metadata_url: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ItemListedData {
     #[serde(flatten)]
     pub context: Context,
@@ -152,7 +197,7 @@ pub struct ItemListedData {
     pub taker: Option<Address>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ItemSoldData {
     #[serde(flatten)]
     pub context: Context,
@@ -170,7 +215,7 @@ pub struct ItemSoldData {
     pub transaction: Transaction,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ItemTransferredData {
     #[serde(flatten)]
     pub context: Context,
@@ -182,7 +227,7 @@ pub struct ItemTransferredData {
     pub quantity: u64,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ItemMetadataUpdatedData {
     #[serde(flatten)]
     pub context: Context,
@@ -197,7 +242,7 @@ pub struct ItemMetadataUpdatedData {
     pub traits: Vec<serde_json::Value>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ItemCancelledData {
     #[serde(flatten)]
     pub context: Context,
@@ -209,7 +254,7 @@ pub struct ItemCancelledData {
     pub transaction: Transaction,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ItemReceivedOfferData {
     #[serde(flatten)]
     pub context: Context,
@@ -225,7 +270,7 @@ pub struct ItemReceivedOfferData {
     pub taker: Option<Address>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ItemReceivedBidData {
     #[serde(flatten)]
     pub context: Context,
@@ -241,15 +286,29 @@ pub struct ItemReceivedBidData {
     pub taker: Address,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum ListingType {
     English,
     Dutch,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Address(ethers::abi::Address);
+
+impl Serialize for Address {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[derive(Serialize)]
+        struct Inner {
+            address: ethers::abi::Address,
+        }
+
+        Inner { address: self.0 }.serialize(serializer)
+    }
+}
 
 impl<'de> Deserialize<'de> for Address {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -265,13 +324,13 @@ impl<'de> Deserialize<'de> for Address {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Transaction {
     pub hash: H256,
     pub timestamp: DateTime<Utc>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PaymentToken {
     pub address: ethers::abi::Address,
     pub decimals: u64,
@@ -284,7 +343,7 @@ pub struct PaymentToken {
 // h/t: meetmangukiya (https://gist.github.com/meetmangukiya/40cad17bcb7d3196d33b072a3500fac7)
 mod u256_fromstr_radix_10 {
     use super::*;
-    use serde::{de::Visitor, Deserializer};
+    use serde::{de::Visitor, Deserializer, Serializer};
     use std::fmt;
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<U256, D::Error>
@@ -311,10 +370,10 @@ mod u256_fromstr_radix_10 {
         deserializer.deserialize_str(Helper)
     }
 
-    // pub fn serialize<S>(value: &U256, serializer: S) -> Result<S::Ok, S::Error>
-    // where
-    //     S: Serializer,
-    // {
-    //     serializer.collect_str(&value)
-    // }
+    pub fn serialize<S>(value: &U256, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.collect_str(&value)
+    }
 }
