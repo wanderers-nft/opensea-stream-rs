@@ -100,18 +100,21 @@ impl<'de> Deserialize<'de> for NftId {
 
         let network = parts
             .next()
-            .and_then(|s| Chain::from_str(s).ok())
-            .ok_or_else(|| D::Error::custom("expected network"))?;
+            .map(Chain::from_str)
+            .ok_or_else(|| D::Error::custom("expected network"))?
+            .map_err(|_| D::Error::custom("invalid network"))?;
 
         let address = parts
             .next()
-            .and_then(|s| ethers::abi::Address::from_str(s).ok().map(Address))
-            .ok_or_else(|| D::Error::custom("expected address"))?;
+            .map(|s| ethers::abi::Address::from_str(s).map(Address))
+            .ok_or_else(|| D::Error::custom("expected address"))?
+            .map_err(D::Error::custom)?;
 
         let id = parts
             .next()
-            .and_then(|s| U256::from_dec_str(s).ok())
-            .ok_or_else(|| D::Error::custom("expected id"))?;
+            .map(U256::from_dec_str)
+            .ok_or_else(|| D::Error::custom("expected id"))?
+            .map_err(D::Error::custom)?;
 
         Ok(NftId {
             network,
