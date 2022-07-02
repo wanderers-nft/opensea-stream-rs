@@ -1,37 +1,69 @@
-use std::fmt;
-use std::str::FromStr;
-
+use crate::Event;
 use chrono::{DateTime, Utc};
 use ethers::prelude::{H256, U256};
-use serde::de::Error;
-use serde::{Deserialize, Serialize};
+use serde::{de::Error, Deserialize, Serialize};
+use std::{fmt, str::FromStr};
 
+/// Payload of a message received from the websocket.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct StreamEvent {
+    /// Timestamp of when this message was sent to the client.
     pub sent_at: DateTime<Utc>,
+    /// Contents of the message
     #[serde(flatten)]
     pub payload: Payload,
 }
 
+/// Content of the message.
+///
+/// This type corresponds to the JSON objects recieved [as described here](https://docs.opensea.io/reference/stream-api-event-schemas),
+/// not the event type used for the Phoenix protocol (see [`Event`]).
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "event_type", content = "payload")]
 #[serde(rename_all = "snake_case")]
 pub enum Payload {
+    /// An item has been listed for sale.
     ItemListed(ItemListedData),
+    /// An item has been sold.
     ItemSold(ItemSoldData),
+    /// An item has been transferred from one wallet to another.
     ItemTransferred(ItemTransferredData),
+    /// An item has had its metadata updated.
     ItemMetadataUpdated(ItemMetadataUpdatedData),
+    /// An item has had its listing cancelled.
     ItemCancelled(ItemCancelledData),
+    /// An item has received an offer.
     ItemReceivedOffer(ItemReceivedOfferData),
+    /// An item has received a bid.
     ItemReceivedBid(ItemReceivedBidData),
 }
 
+impl From<Payload> for Event {
+    fn from(val: Payload) -> Self {
+        match val {
+            Payload::ItemListed(_) => Event::ItemListed,
+            Payload::ItemSold(_) => Event::ItemSold,
+            Payload::ItemTransferred(_) => Event::ItemTransferred,
+            Payload::ItemMetadataUpdated(_) => Event::ItemMetadataUpdated,
+            Payload::ItemCancelled(_) => Event::ItemCancelled,
+            Payload::ItemReceivedOffer(_) => Event::ItemReceivedOffer,
+            Payload::ItemReceivedBid(_) => Event::ItemReceivedBid,
+        }
+    }
+}
+
+/// Context for a message (token and collection)
+///
+/// This struct is present in every [`Payload`].
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Context {
+    /// Collection that the token belongs to.
     pub collection: Collection,
+    /// Information about the item itself.
     pub item: Item,
 }
 
+/// A collection on OpenSea.
 #[derive(Debug, Clone)]
 pub struct Collection(String);
 
@@ -66,18 +98,27 @@ impl<'de> Deserialize<'de> for Collection {
     }
 }
 
+/// Context about an item.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Item {
+    /// Identifier.
     pub nft_id: NftId,
+    /// Link to OpenSea page.
     pub permalink: String,
+    /// Chain the item is on.
     pub chain: Chain,
+    /// Basic metadata.
     pub metadata: Metadata,
 }
 
+/// Identifier of the NFT.
 #[derive(Debug, Clone)]
 pub struct NftId {
+    /// Chain the item is on.
     pub network: Chain,
+    /// Contract address.
     pub address: Address,
+    /// Token ID.
     pub id: U256,
 }
 
@@ -124,17 +165,26 @@ impl<'de> Deserialize<'de> for NftId {
     }
 }
 
+/// Network an item is on.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 #[serde(tag = "name", rename_all = "lowercase")]
+#[non_exhaustive]
 pub enum Chain {
+    /// [Ethereum](https://ethereum.org) mainnet.
     Ethereum,
+    /// [Polygon](https://polygon.technology/solutions/polygon-pos) mainnet.
     #[serde(rename = "matic")]
     Polygon,
+    /// [Klaytn](https://www.klaytn.foundation/) mainnet.
     Klaytn,
+    /// [Solana](https://solana.com/) mainnet. This variant (and all events for Solana assets) are not supported in this version.
     Solana,
 
+    /// [Rinkeby](https://ethereum.org/en/developers/docs/networks/#rinkeby) testnet (of Ethereum).
     Rinkeby,
+    /// [Mumbai](https://docs.polygon.technology/docs/develop/network-details/network#mumbai-pos-testnet) testnet (of Polygon).
     Mumbai,
+    /// [Baobab](https://www.klaytn.foundation/) testnet (of Klaytn).
     Baobab,
 }
 
@@ -173,129 +223,209 @@ impl fmt::Display for Chain {
     }
 }
 
+/// Basic metadata of an item.
+///
+/// This is fetched directly from an item's metadata according to [metadata standards](https://docs.opensea.io/docs/metadata-standards).
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Metadata {
+    /// Name.
     pub name: String,
+    /// Description.
     pub description: Option<String>,
+    /// Image URL. This is shown on the collection's storefront.
     pub image_url: Option<String>,
+    /// Animation URL. This is shown on the item's page.
     pub animation_url: Option<String>,
+    /// URL to metadata.
     pub metadata_url: String,
 }
 
+/// Payload data for [`Payload::ItemListed`].
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ItemListedData {
+    /// Context
     #[serde(flatten)]
     pub context: Context,
 
+    /// Timestamp of when the listing was created.
     pub event_timestamp: DateTime<Utc>,
+    /// Starting price of the listing. See `payment_token` for the actual value of each unit.
     #[serde(with = "u256_fromstr_radix_10")]
     pub base_price: U256,
+    /// Expiration date.
     pub expiration_date: DateTime<Utc>,
+    /// Whether the listing is private.
     pub is_private: bool,
+    /// Timestamp of when the listing was created.
     pub listing_date: DateTime<Utc>,
+    /// Type of listing. `None` indicates the listing is a buyout.
     pub listing_type: ListingType,
+    /// Creator of the listing.
     pub maker: Address,
+    /// Token accepted for payment.
     pub payment_token: PaymentToken,
+    /// Number of items on sale. This is always `1` for ERC-721 tokens.
     pub quantity: u64,
+    /// Buyer of the listing.
     pub taker: Option<Address>,
 }
 
+/// Payload data for [`Payload::ItemSold`].
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ItemSoldData {
+    /// Context
     #[serde(flatten)]
     pub context: Context,
 
+    /// Timestamp of when the item was sold.
     pub event_timestamp: DateTime<Utc>,
+    /// Timestamp of when the listing was closed.
     pub closing_date: DateTime<Utc>,
+    /// Whether the listing was private.
     pub is_private: bool,
+    /// Type of listing. `None` indicates the listing was a buyout.
     pub listing_type: Option<ListingType>,
+    /// Creator of the listing.
     pub maker: Address,
+    /// Token used for payment.
     pub payment_token: PaymentToken,
+    /// Number of items bought. This is always `1` for ERC-721 tokens.
     pub quantity: u64,
+    /// Purchase price. See `payment_token` for the actual value of each unit.
     #[serde(with = "u256_fromstr_radix_10")]
     pub sale_price: U256,
+    /// Buyer/winner of the listing.
     pub taker: Address,
+    /// Transaction for the purchase.
     pub transaction: Transaction,
 }
 
+/// Payload data for [`Payload::ItemTransferred`].
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ItemTransferredData {
+    /// Context
     #[serde(flatten)]
     pub context: Context,
 
+    /// Timestamp of when the item was transferred.
     pub event_timestamp: DateTime<Utc>,
+    /// Transaction of the transfer.
     pub transaction: Transaction,
+    /// Address the item was transferred from.
     pub from_account: Address,
+    /// Address the item was transferred to.
     pub to_account: Address,
+    /// Number of items transferred. This is always `1` for ERC-721 tokens.
     pub quantity: u64,
 }
 
+/// Payload data for [`Payload::ItemMetadataUpdated`].
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ItemMetadataUpdatedData {
+    /// Context
     #[serde(flatten)]
     pub context: Context,
 
+    /// New name.
     pub name: String,
+    /// New description.
     pub description: Option<String>,
+    /// New cached preview URL.
     pub image_preview_url: Option<String>,
+    /// New animation URL.
     pub animation_url: Option<String>,
+    /// New background color.
     pub background_color: String,
+    /// New URL to metadata
     pub metadata_url: String,
-    // todo: what's here?
+    /// TODO: what's here?
     pub traits: Vec<serde_json::Value>,
 }
 
+/// Payload data for [`Payload::ItemCancelled`].
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ItemCancelledData {
+    /// Context
     #[serde(flatten)]
     pub context: Context,
 
+    /// Timestamp of when the listing was cancelled.
     pub event_timestamp: DateTime<Utc>,
+    /// Type of listing. `None` indicates the listing would've been a buyout.
     pub listing_type: Option<ListingType>,
+    /// Token accepted for payment.
     pub payment_token: PaymentToken,
+    /// Number of items in listing. This is always `1` for ERC-721 tokens.
     pub quantity: u64,
+    /// Transaction for the cancellation.
     pub transaction: Transaction,
 }
 
+/// Payload data for [`Payload::ItemReceivedOffer`].
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ItemReceivedOfferData {
+    /// Context
     #[serde(flatten)]
     pub context: Context,
 
+    /// Timestamp of when the offer was received.
     pub event_timestamp: DateTime<Utc>,
+    /// Offer price. See `payment_token` for the actual value of each unit.
     #[serde(with = "u256_fromstr_radix_10")]
     pub base_price: U256,
+    /// Timestamp of when the offer was created.
     pub created_date: DateTime<Utc>,
+    /// Timestamp of when the offer will expire.
     pub expiration_date: DateTime<Utc>,
+    /// Creator of the offer.
     pub maker: Address,
+    /// Token offered for payment.
     pub payment_token: PaymentToken,
+    /// Number of items on the offer. This is always `1` for ERC-721 tokens.
     pub quantity: u64,
+    /// Taker of the offer.
     pub taker: Option<Address>,
 }
 
+/// Payload data for [`Payload::ItemReceivedBid`].
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ItemReceivedBidData {
+    /// Context
     #[serde(flatten)]
     pub context: Context,
 
+    /// Timestamp of when the bid was received.
     pub event_timestamp: DateTime<Utc>,
+    /// Bid price. See `payment_token` for the actual value of each unit.
     #[serde(with = "u256_fromstr_radix_10")]
     pub base_price: U256,
+    /// Timestamp of when the bid was created.
     pub created_date: DateTime<Utc>,
+    /// Timestamp of when the bid will expire.
     pub expiration_date: DateTime<Utc>,
+    /// Creator of the bid.
     pub maker: Address,
+    /// Token offered for payment.
     pub payment_token: PaymentToken,
+    /// Number of items on the offer. This is always `1` for ERC-721 tokens.
     pub quantity: u64,
+    /// Taker of the bid.
     pub taker: Address,
 }
 
+/// Auctioning system used by the listing.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum ListingType {
+    /// [English](https://en.wikipedia.org/wiki/English_auction) (ascending).
     English,
+    /// [Dutch](https://en.wikipedia.org/wiki/Dutch_auction) (descending).
     Dutch,
 }
 
+/// Address.
+///
+/// No validation is performed as the received addresses do not use [EIP-55](https://eips.ethereum.org/EIPS/eip-55).
 #[derive(Debug, Clone, Copy)]
 pub struct Address(ethers::abi::Address);
 
@@ -327,19 +457,29 @@ impl<'de> Deserialize<'de> for Address {
     }
 }
 
+/// Details of a transaction
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Transaction {
+    /// Transaction hash
     pub hash: H256,
+    /// Timestamp of transaction
     pub timestamp: DateTime<Utc>,
 }
 
+/// Token used for payment.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PaymentToken {
+    /// Contract address
     pub address: ethers::abi::Address,
+    /// Granularity of the token
     pub decimals: u64,
+    /// Price of token (denominated in ETH)
     pub eth_price: f64,
+    /// Name
     pub name: String,
+    /// Symbol
     pub symbol: String,
+    /// Price of token (denominated in USD)
     pub usd_price: f64,
 }
 

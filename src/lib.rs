@@ -1,49 +1,82 @@
-use collection::Collection;
-use event::Event;
-use event_schemas::StreamEvent;
+#![deny(missing_docs)]
+
+//! Crate for receiving updates from the [OpenSea Stream API](https://docs.opensea.io/reference/stream-api-overview).
+//! This crate is a thin wrapper over [`phyllo`] with a few convenience functions and struct definitions for the event schema.
+//! It is recommended that you also read the documentation of [`phyllo`] to understand the Phoenix protocol which delivers these messages.
+//!
+//! # Example
+//! The following example prints all listings of items in the `wandernauts` collection as they are created.
+//! ```no_run
+//! # use opensea_stream::{client, schema, subscribe_to, Collection, Network};
+//! # use phyllo::message::Payload;
+//! #[tokio::main]
+//! async fn main() -> anyhow::Result<()> {
+//!     let mut client = client(Network::Mainnet, "YOUR_API_KEY_HERE").await;
+//!
+//!     // Subscribe to a collection. Note that you must all subscribe to all events
+//!     // in the collection; filtering is your responsibility (see below).
+//!     let (handler, mut subscription) = subscribe_to(
+//!         &mut client,
+//!         Collection::Collection("wandernauts".to_string()),
+//!     )
+//!     .await?;
+//!
+//!     // To unsubscribe:
+//!     // handler.close().await?;
+//!
+//!     loop {
+//!         // The message received is a raw message from the Phoenix protocol. It makes
+//!         // no guarantees of whether there is any content in the payload field, so we
+//!         // must check it ourselves.
+//!         let event = match subscription.recv().await?.payload {
+//!             Some(Payload::Custom(p)) => p,
+//!             _ => {
+//!                 eprintln!("unexpected message");
+//!                 continue;
+//!             }
+//!         };
+//!
+//!         // Only print item listing events.
+//!         if let schema::Payload::ItemListed(listing) = event.payload {
+//!             println!("{:?}", listing);
+//!         }
+//!     }
+//! }
+
 use phyllo::{
-    channel::{channel_builder::ChannelBuilder, ChannelHandler},
+    channel::{ChannelBuilder, ChannelHandler},
+    error::RegisterChannelError,
     message::Message,
-    socket::{socket_builder::SocketBuilder, SocketHandler},
+    socket::{SocketBuilder, SocketHandler},
 };
+use schema::StreamEvent;
 use serde_json::Value;
 use tokio::sync::broadcast;
 use url::Url;
 
-pub mod collection;
-pub mod event;
-pub mod event_schemas;
+mod protocol;
+/// Payload schema for messages received from the websocket.
+pub mod schema;
 
-pub enum Network {
-    Mainnet,
-    Testnet,
-}
+pub use protocol::*;
 
-impl From<Network> for Url {
-    fn from(val: Network) -> Self {
-        match val {
-            Network::Mainnet => {
-                Url::parse("wss://stream.openseabeta.com/socket/websocket").unwrap()
-            }
-            Network::Testnet => {
-                Url::parse("wss://testnets-stream.openseabeta.com/socket/websocket").unwrap()
-            }
-        }
-    }
-}
-
+/// Create a client.
 pub async fn client(network: Network, token: &str) -> SocketHandler<Collection> {
     let mut network: Url = Url::from(network);
     network.query_pairs_mut().append_pair("token", token);
     SocketBuilder::new(network).build().await
 }
 
+/// Subscribe to all the events of a particular [`Collection`].
 pub async fn subscribe_to(
     socket: &mut SocketHandler<Collection>,
     collection: Collection,
-) -> (
-    ChannelHandler<Collection, Event, Value, StreamEvent>,
-    broadcast::Receiver<Message<Collection, Event, Value, StreamEvent>>,
-) {
+) -> Result<
+    (
+        ChannelHandler<Collection, Event, Value, StreamEvent>,
+        broadcast::Receiver<Message<Collection, Event, Value, StreamEvent>>,
+    ),
+    RegisterChannelError,
+> {
     socket.channel(ChannelBuilder::new(collection)).await
 }
