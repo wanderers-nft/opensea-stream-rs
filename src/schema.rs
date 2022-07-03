@@ -475,12 +475,14 @@ pub struct PaymentToken {
     /// Granularity of the token
     pub decimals: u64,
     /// Price of token (denominated in ETH)
+    #[serde(with = "f64_fromstring")]
     pub eth_price: f64,
     /// Name
     pub name: String,
     /// Symbol
     pub symbol: String,
     /// Price of token (denominated in USD)
+    #[serde(with = "f64_fromstring")]
     pub usd_price: f64,
 }
 
@@ -519,5 +521,33 @@ mod u256_fromstr_radix_10 {
         S: Serializer,
     {
         serializer.collect_str(&value)
+    }
+}
+
+mod f64_fromstring {
+    use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<f64, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum StringFloat {
+            Str(String),
+            F64(f64),
+        }
+
+        match StringFloat::deserialize(deserializer)? {
+            StringFloat::Str(s) => s.parse().map_err(D::Error::custom),
+            StringFloat::F64(f) => Ok(f),
+        }
+    }
+
+    pub fn serialize<S>(value: &f64, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        value.to_string().serialize(serializer)
     }
 }
