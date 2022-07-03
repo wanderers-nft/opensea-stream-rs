@@ -229,7 +229,7 @@ impl fmt::Display for Chain {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Metadata {
     /// Name.
-    pub name: String,
+    pub name: Option<String>,
     /// Description.
     pub description: Option<String>,
     /// Image URL. This is shown on the collection's storefront.
@@ -237,7 +237,7 @@ pub struct Metadata {
     /// Animation URL. This is shown on the item's page.
     pub animation_url: Option<String>,
     /// URL to metadata.
-    pub metadata_url: String,
+    pub metadata_url: Option<String>,
 }
 
 /// Payload data for [`Payload::ItemListed`].
@@ -259,7 +259,7 @@ pub struct ItemListedData {
     /// Timestamp of when the listing was created.
     pub listing_date: DateTime<Utc>,
     /// Type of listing. `None` indicates the listing is a buyout.
-    pub listing_type: ListingType,
+    pub listing_type: Option<ListingType>,
     /// Creator of the listing.
     pub maker: Address,
     /// Token accepted for payment.
@@ -327,7 +327,7 @@ pub struct ItemMetadataUpdatedData {
     pub context: Context,
 
     /// New name.
-    pub name: String,
+    pub name: Option<String>,
     /// New description.
     pub description: Option<String>,
     /// New cached preview URL.
@@ -335,10 +335,11 @@ pub struct ItemMetadataUpdatedData {
     /// New animation URL.
     pub animation_url: Option<String>,
     /// New background color.
-    pub background_color: String,
+    pub background_color: Option<String>,
     /// New URL to metadata
-    pub metadata_url: String,
+    pub metadata_url: Option<String>,
     /// TODO: what's here?
+    #[serde(default)]
     pub traits: Vec<serde_json::Value>,
 }
 
@@ -410,7 +411,7 @@ pub struct ItemReceivedBidData {
     /// Number of items on the offer. This is always `1` for ERC-721 tokens.
     pub quantity: u64,
     /// Taker of the bid.
-    pub taker: Address,
+    pub taker: Option<Address>,
 }
 
 /// Auctioning system used by the listing.
