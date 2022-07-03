@@ -38,7 +38,7 @@ impl<'de> Deserialize<'de> for Collection {
     where
         D: serde::Deserializer<'de>,
     {
-        let s: &str = Deserialize::deserialize(deserializer)?;
+        let s: String = Deserialize::deserialize(deserializer)?;
         let s = s
             .strip_prefix("collection:")
             .ok_or_else(|| D::Error::custom("expected collection:name"))?;

@@ -136,7 +136,7 @@ impl<'de> Deserialize<'de> for NftId {
     where
         D: serde::Deserializer<'de>,
     {
-        let s: &str = Deserialize::deserialize(deserializer)?;
+        let s: String = Deserialize::deserialize(deserializer)?;
         let mut parts = s.splitn(3, '/').fuse();
 
         let network = parts
