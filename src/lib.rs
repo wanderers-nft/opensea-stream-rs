@@ -25,12 +25,11 @@
 //!     // handler.close().await?;
 //!
 //!     loop {
-//!         // The message received is a raw message from the Phoenix protocol. It makes
-//!         // no guarantees of whether there is any content in the payload field, so we
-//!         // must check it ourselves.
-//!         let event = match subscription.recv().await?.payload {
-//!             Some(Payload::Custom(p)) => p,
-//!             _ => {
+//!         // The message received from the channel is a raw message of the Phoenix protocol.
+//!         // It may or may not contain a payload.
+//!         let event = match subscription.recv().await?.into_custom_payload() {
+//!             Some(v) => v,
+//!             None => {
 //!                 eprintln!("unexpected message");
 //!                 continue;
 //!             }
