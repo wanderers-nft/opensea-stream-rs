@@ -1,6 +1,9 @@
 use crate::Event;
 use chrono::{DateTime, Utc};
-use ethers::prelude::{H256, U256};
+use ethers::{
+    abi::Address,
+    prelude::{H256, U256},
+};
 use serde::{de::Error, Deserialize, Serialize};
 use std::{fmt, str::FromStr};
 
@@ -127,7 +130,7 @@ impl Serialize for NftId {
     where
         S: serde::Serializer,
     {
-        format!("{}/{}/{}", self.network, self.address.0, self.id).serialize(serializer)
+        format!("{}/{:?}/{}", self.network, self.address, self.id).serialize(serializer)
     }
 }
 
@@ -147,7 +150,7 @@ impl<'de> Deserialize<'de> for NftId {
 
         let address = parts
             .next()
-            .map(|s| ethers::abi::Address::from_str(s).map(Address))
+            .map(Address::from_str)
             .ok_or_else(|| D::Error::custom("expected address"))?
             .map_err(D::Error::custom)?;
 
@@ -261,12 +264,14 @@ pub struct ItemListedData {
     /// Type of listing. `None` indicates the listing is a buyout.
     pub listing_type: Option<ListingType>,
     /// Creator of the listing.
+    #[serde(with = "address_fromjson")]
     pub maker: Address,
     /// Token accepted for payment.
     pub payment_token: PaymentToken,
     /// Number of items on sale. This is always `1` for ERC-721 tokens.
     pub quantity: u64,
     /// Buyer of the listing.
+    #[serde(with = "address_fromjson_opt", default)]
     pub taker: Option<Address>,
 }
 
@@ -286,6 +291,7 @@ pub struct ItemSoldData {
     /// Type of listing. `None` indicates the listing was a buyout.
     pub listing_type: Option<ListingType>,
     /// Creator of the listing.
+    #[serde(with = "address_fromjson")]
     pub maker: Address,
     /// Token used for payment.
     pub payment_token: PaymentToken,
@@ -295,6 +301,7 @@ pub struct ItemSoldData {
     #[serde(with = "u256_fromstr_radix_10")]
     pub sale_price: U256,
     /// Buyer/winner of the listing.
+    #[serde(with = "address_fromjson")]
     pub taker: Address,
     /// Transaction for the purchase.
     pub transaction: Transaction,
@@ -312,8 +319,10 @@ pub struct ItemTransferredData {
     /// Transaction of the transfer.
     pub transaction: Transaction,
     /// Address the item was transferred from.
+    #[serde(with = "address_fromjson")]
     pub from_account: Address,
     /// Address the item was transferred to.
+    #[serde(with = "address_fromjson")]
     pub to_account: Address,
     /// Number of items transferred. This is always `1` for ERC-721 tokens.
     pub quantity: u64,
@@ -379,12 +388,14 @@ pub struct ItemReceivedOfferData {
     /// Timestamp of when the offer will expire.
     pub expiration_date: DateTime<Utc>,
     /// Creator of the offer.
+    #[serde(with = "address_fromjson")]
     pub maker: Address,
     /// Token offered for payment.
     pub payment_token: PaymentToken,
     /// Number of items on the offer. This is always `1` for ERC-721 tokens.
     pub quantity: u64,
     /// Taker of the offer.
+    #[serde(with = "address_fromjson_opt", default)]
     pub taker: Option<Address>,
 }
 
@@ -405,12 +416,14 @@ pub struct ItemReceivedBidData {
     /// Timestamp of when the bid will expire.
     pub expiration_date: DateTime<Utc>,
     /// Creator of the bid.
+    #[serde(with = "address_fromjson")]
     pub maker: Address,
     /// Token offered for payment.
     pub payment_token: PaymentToken,
     /// Number of items on the offer. This is always `1` for ERC-721 tokens.
     pub quantity: u64,
     /// Taker of the bid.
+    #[serde(with = "address_fromjson_opt", default)]
     pub taker: Option<Address>,
 }
 
@@ -424,37 +437,52 @@ pub enum ListingType {
     Dutch,
 }
 
-/// Address.
-///
-/// No validation is performed as the received addresses do not use [EIP-55](https://eips.ethereum.org/EIPS/eip-55).
-#[derive(Debug, Clone, Copy)]
-pub struct Address(ethers::abi::Address);
+mod address_fromjson {
+    use ethers::abi::Address;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-impl Serialize for Address {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    #[derive(Serialize, Deserialize)]
+    struct Inner {
+        address: Address,
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Address, D::Error>
     where
-        S: serde::Serializer,
+        D: Deserializer<'de>,
     {
-        #[derive(Serialize)]
-        struct Inner {
-            address: ethers::abi::Address,
-        }
+        Deserialize::deserialize(deserializer).map(|v: Inner| v.address)
+    }
 
-        Inner { address: self.0 }.serialize(serializer)
+    pub fn serialize<S>(value: &Address, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        Inner { address: *value }.serialize(serializer)
     }
 }
 
-impl<'de> Deserialize<'de> for Address {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        #[derive(Deserialize)]
-        struct Inner {
-            address: ethers::abi::Address,
-        }
+mod address_fromjson_opt {
+    use ethers::abi::Address;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-        Deserialize::deserialize(deserializer).map(|v: Inner| Address(v.address))
+    #[derive(Serialize, Deserialize)]
+    struct Inner {
+        address: Address,
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<Address>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let inner: Option<Inner> = Deserialize::deserialize(deserializer)?;
+        Ok(inner.map(|i| i.address))
+    }
+
+    pub fn serialize<S>(value: &Option<Address>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        value.map(|v| Inner { address: v }).serialize(serializer)
     }
 }
 
@@ -471,7 +499,7 @@ pub struct Transaction {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PaymentToken {
     /// Contract address
-    pub address: ethers::abi::Address,
+    pub address: Address,
     /// Granularity of the token
     pub decimals: u64,
     /// Price of token (denominated in ETH)
