@@ -54,6 +54,8 @@ use serde_json::Value;
 use tokio::sync::broadcast;
 use url::Url;
 
+pub use phyllo;
+
 mod protocol;
 /// Payload schema for messages received from the websocket.
 pub mod schema;
