@@ -6,6 +6,7 @@ use ethers::{
 };
 use serde::{de::Error, Deserialize, Serialize};
 use std::{fmt, str::FromStr};
+use url::Url;
 
 /// Payload of a message received from the websocket.
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -107,7 +108,7 @@ pub struct Item {
     /// Identifier.
     pub nft_id: NftId,
     /// Link to OpenSea page.
-    pub permalink: String,
+    pub permalink: Url,
     /// Chain the item is on.
     pub chain: Chain,
     /// Basic metadata.
@@ -236,11 +237,11 @@ pub struct Metadata {
     /// Description.
     pub description: Option<String>,
     /// Image URL. This is shown on the collection's storefront.
-    pub image_url: Option<String>,
+    pub image_url: Option<Url>,
     /// Animation URL. This is shown on the item's page.
-    pub animation_url: Option<String>,
+    pub animation_url: Option<Url>,
     /// URL to metadata.
-    pub metadata_url: Option<String>,
+    pub metadata_url: Option<Url>,
 }
 
 /// Payload data for [`Payload::ItemListed`].
@@ -340,13 +341,13 @@ pub struct ItemMetadataUpdatedData {
     /// New description.
     pub description: Option<String>,
     /// New cached preview URL.
-    pub image_preview_url: Option<String>,
+    pub image_preview_url: Option<Url>,
     /// New animation URL.
-    pub animation_url: Option<String>,
+    pub animation_url: Option<Url>,
     /// New background color.
     pub background_color: Option<String>,
     /// New URL to metadata
-    pub metadata_url: Option<String>,
+    pub metadata_url: Option<Url>,
     /// TODO: what's here?
     #[serde(default)]
     pub traits: Vec<serde_json::Value>,
