@@ -438,6 +438,19 @@ pub enum ListingType {
     Dutch,
 }
 
+impl fmt::Display for ListingType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                ListingType::English => "English",
+                ListingType::Dutch => "Dutch",
+            }
+        )
+    }
+}
+
 mod address_fromjson {
     use ethers::abi::Address;
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
