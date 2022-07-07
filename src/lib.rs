@@ -41,6 +41,14 @@
 //!         }
 //!     }
 //! }
+//! ```
+//! # Features
+//! `rustls-tls-native-roots` (which uses [`rustls-native-certs`](https://crates.io/crates/rustls-native-certs)
+//! for root certificates) is enabled by default. To use `rustls-tls-webpki-roots` ([`webpki-roots`](https://crates.io/crates/webpki-roots))
+//! instead, include this in your `Cargo.toml`:
+//! ```toml
+//! opensea-stream = { version = "0.1", default-features = false, features = ["rustls-tls-webpki-roots"] }
+//! ```
 
 use phyllo::{
     channel::{ChannelBuilder, ChannelHandler},
