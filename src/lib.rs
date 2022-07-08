@@ -89,3 +89,18 @@ pub async fn subscribe_to(
 > {
     socket.channel(ChannelBuilder::new(collection)).await
 }
+
+/// Subscribe to all the events of a particular [`Collection`], using
+/// a custom configuration.
+pub async fn subscribe_to_with_config(
+    socket: &mut SocketHandler<Collection>,
+    channel_builder: &mut ChannelBuilder<Collection>,
+) -> Result<
+    (
+        ChannelHandler<Collection, Event, Value, StreamEvent>,
+        broadcast::Receiver<Message<Collection, Event, Value, StreamEvent>>,
+    ),
+    RegisterChannelError,
+> {
+    socket.channel(channel_builder.clone()).await
+}
