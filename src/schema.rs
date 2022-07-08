@@ -348,7 +348,7 @@ pub struct ItemMetadataUpdatedData {
     pub background_color: Option<String>,
     /// New URL to metadata
     pub metadata_url: Option<Url>,
-    /// TODO: what's here?
+    /// New traits. This appears to be bugged for now, and will always be empty.
     #[serde(default)]
     pub traits: Vec<serde_json::Value>,
 }
