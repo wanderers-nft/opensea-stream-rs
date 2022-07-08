@@ -1,5 +1,10 @@
 [package]
 name = "opensea-stream"
+description = "Client for receiving updates from the OpenSea Stream API over websockets"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/wanderers-nft/opensea-stream-rs"
+categories = ["web-programming::websocket", "cryptography::cryptocurrencies"]
+keywords = ["opensea", "stream", "nft"]
 version = "0.1.0"
 edition = "2021"
 
