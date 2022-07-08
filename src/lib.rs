@@ -69,14 +69,14 @@ pub mod schema;
 
 pub use protocol::*;
 
-/// Create a client.
+/// Creates a client.
 pub async fn client(network: Network, token: &str) -> SocketHandler<Collection> {
     let mut network: Url = Url::from(network);
     network.query_pairs_mut().append_pair("token", token);
     SocketBuilder::new(network).build().await
 }
 
-/// Subscribe to all the events of a particular [`Collection`].
+/// Subscribes to all the events of a particular [`Collection`].
 pub async fn subscribe_to(
     socket: &mut SocketHandler<Collection>,
     collection: Collection,
@@ -90,7 +90,7 @@ pub async fn subscribe_to(
     socket.channel(ChannelBuilder::new(collection)).await
 }
 
-/// Subscribe to all the events of a particular [`Collection`], using
+/// Subscribes to all the events of a particular [`Collection`] using
 /// a custom configuration.
 pub async fn subscribe_to_with_config(
     socket: &mut SocketHandler<Collection>,
