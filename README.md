@@ -1,8 +1,8 @@
 # opensea-stream
 
 Crate for receiving updates from the [OpenSea Stream API](https://docs.opensea.io/reference/stream-api-overview).
-This crate is a thin wrapper over [`phyllo`] with a few convenience functions and struct definitions for the event schema.
-It is recommended that you also read the documentation of [`phyllo`] to understand the Phoenix protocol which delivers these messages.
+This crate is a thin wrapper over [`phyllo`](https://crates.io/crates/phyllo) with a few convenience functions and struct definitions for the event schema.
+It is recommended that you also read the documentation of [`phyllo`](https://crates.io/crates/phyllo) to understand the Phoenix protocol which delivers these messages.
 
 ## Example
 The following example prints all listings of items in the `wandernauts` collection as they are created.
