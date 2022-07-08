@@ -102,5 +102,5 @@ pub async fn subscribe_to_with_config(
     ),
     RegisterChannelError,
 > {
-    socket.channel(channel_builder.clone()).await
+    socket.channel(channel_builder).await
 }
