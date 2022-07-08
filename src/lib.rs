@@ -4,6 +4,8 @@
 //! This crate is a thin wrapper over [`phyllo`] with a few convenience functions and struct definitions for the event schema.
 //! It is recommended that you also read the documentation of [`phyllo`] to understand the Phoenix protocol which delivers these messages.
 //!
+//! Events that happen on Solana (and thus carry Solana addresses) are not supported for now.
+//!
 //! # Example
 //! The following example prints all listings of items in the `wandernauts` collection as they are created.
 //! ```no_run
