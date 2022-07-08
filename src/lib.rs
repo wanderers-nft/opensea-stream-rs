@@ -94,7 +94,7 @@ pub async fn subscribe_to(
 /// a custom configuration.
 pub async fn subscribe_to_with_config(
     socket: &mut SocketHandler<Collection>,
-    channel_builder: &mut ChannelBuilder<Collection>,
+    channel_builder: ChannelBuilder<Collection>,
 ) -> Result<
     (
         ChannelHandler<Collection, Event, Value, StreamEvent>,
