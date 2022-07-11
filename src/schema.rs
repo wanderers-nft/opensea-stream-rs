@@ -1,8 +1,8 @@
 use crate::Event;
 use chrono::{DateTime, Utc};
-use ethers::{
+use ethers_core::{
     abi::Address,
-    prelude::{H256, U256},
+    types::{H256, U256},
 };
 use serde::{de::Error, Deserialize, Serialize};
 use std::{fmt, str::FromStr};
@@ -452,7 +452,7 @@ impl fmt::Display for ListingType {
 }
 
 mod address_fromjson {
-    use ethers::abi::Address;
+    use ethers_core::abi::Address;
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
     #[derive(Serialize, Deserialize)]
@@ -476,7 +476,7 @@ mod address_fromjson {
 }
 
 mod address_fromjson_opt {
-    use ethers::abi::Address;
+    use ethers_core::abi::Address;
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
     #[derive(Serialize, Deserialize)]
