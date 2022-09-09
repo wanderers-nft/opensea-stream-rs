@@ -57,7 +57,7 @@ impl<'de> Deserialize<'de> for Collection {
 pub enum Network {
     /// Mainnet (`Ethereum`, `Polygon`, `Klaytn`, `Solana`)
     Mainnet,
-    /// Testnet (`Rinkeby`, `Mumbai`, `Baobab`)
+    /// Testnet (`Goerli`, `Mumbai`, `Baobab`)
     Testnet,
 }
 

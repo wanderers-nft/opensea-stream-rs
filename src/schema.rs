@@ -169,28 +169,37 @@ impl<'de> Deserialize<'de> for NftId {
     }
 }
 
-/// Network an item is on.
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
-#[serde(tag = "name", rename_all = "lowercase")]
-#[non_exhaustive]
-pub enum Chain {
-    /// [Ethereum](https://ethereum.org) mainnet.
-    Ethereum,
-    /// [Polygon](https://polygon.technology/solutions/polygon-pos) mainnet.
-    #[serde(rename = "matic")]
-    Polygon,
-    /// [Klaytn](https://www.klaytn.foundation/) mainnet.
-    Klaytn,
-    /// [Solana](https://solana.com/) mainnet. This variant (and all events for Solana assets) are not supported in this version.
-    Solana,
+mod chain {
+    #![allow(deprecated)]
+    use serde::{Deserialize, Serialize};
 
-    /// [Rinkeby](https://ethereum.org/en/developers/docs/networks/#rinkeby) testnet (of Ethereum).
-    Rinkeby,
-    /// [Mumbai](https://docs.polygon.technology/docs/develop/network-details/network#mumbai-pos-testnet) testnet (of Polygon).
-    Mumbai,
-    /// [Baobab](https://www.klaytn.foundation/) testnet (of Klaytn).
-    Baobab,
+    /// Network an item is on.
+    #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+    #[serde(tag = "name", rename_all = "lowercase")]
+    #[non_exhaustive]
+    pub enum Chain {
+        /// [Ethereum](https://ethereum.org) mainnet.
+        Ethereum,
+        /// [Polygon](https://polygon.technology/solutions/polygon-pos) mainnet.
+        #[serde(rename = "matic")]
+        Polygon,
+        /// [Klaytn](https://www.klaytn.foundation/) mainnet.
+        Klaytn,
+        /// [Solana](https://solana.com/) mainnet. This variant (and all events for Solana assets) are not supported in this version.
+        Solana,
+
+        /// [Goerli](https://ethereum.org/en/developers/docs/networks/#goerli) testnet (of Ethereum).
+        Goerli,
+        /// [Rinkeby](https://ethereum.org/en/developers/docs/networks/#rinkeby) testnet (of Ethereum).
+        #[deprecated = "OpenSea no longer supports Rinkeby as the testnet has been deprecated for The Merge."]
+        Rinkeby,
+        /// [Mumbai](https://docs.polygon.technology/docs/develop/network-details/network#mumbai-pos-testnet) testnet (of Polygon).
+        Mumbai,
+        /// [Baobab](https://www.klaytn.foundation/) testnet (of Klaytn).
+        Baobab,
+    }
 }
+pub use chain::Chain;
 
 impl FromStr for Chain {
     type Err = ();
@@ -201,6 +210,7 @@ impl FromStr for Chain {
             "matic" => Ok(Chain::Polygon),
             "klaytn" => Ok(Chain::Klaytn),
             "solana" => Ok(Chain::Solana),
+            #[allow(deprecated)]
             "rinkeby" => Ok(Chain::Rinkeby),
             "mumbai" => Ok(Chain::Mumbai),
             "baobab" => Ok(Chain::Baobab),
@@ -219,9 +229,11 @@ impl fmt::Display for Chain {
                 Chain::Polygon => "matic",
                 Chain::Klaytn => "klaytn",
                 Chain::Solana => "solana",
+                #[allow(deprecated)]
                 Chain::Rinkeby => "rinkeby",
                 Chain::Mumbai => "mumbai",
                 Chain::Baobab => "baobab",
+                Chain::Goerli => "goerli",
             }
         )
     }
