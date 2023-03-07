@@ -279,6 +279,8 @@ pub struct ItemListedData {
     /// Creator of the listing.
     #[serde(with = "address_fromjson")]
     pub maker: Address,
+    /// Order hash. 
+    pub order_hash: H256,
     /// Token accepted for payment.
     pub payment_token: PaymentToken,
     /// Number of items on sale. This is always `1` for ERC-721 tokens.
