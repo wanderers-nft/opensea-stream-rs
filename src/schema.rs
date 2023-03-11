@@ -25,6 +25,7 @@ pub struct StreamEvent {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "event_type", content = "payload")]
 #[serde(rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum Payload {
     /// An item has been listed for sale.
     ItemListed(ItemListedData),
