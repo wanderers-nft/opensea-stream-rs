@@ -279,7 +279,7 @@ pub struct ItemListedData {
     /// Creator of the listing.
     #[serde(with = "address_fromjson")]
     pub maker: Address,
-    /// Order hash. 
+    /// Hash id of the listing.
     pub order_hash: H256,
     /// Token accepted for payment.
     pub payment_token: PaymentToken,
@@ -378,6 +378,11 @@ pub struct ItemCancelledData {
     pub event_timestamp: DateTime<Utc>,
     /// Type of listing. `None` indicates the listing would've been a buyout.
     pub listing_type: Option<ListingType>,
+    /// Creator of the cancellation order.
+    #[serde(with = "address_fromjson")]
+    pub maker: Address,
+    /// Hash id of the listing.
+    pub order_hash: H256,
     /// Token accepted for payment.
     pub payment_token: PaymentToken,
     /// Number of items in listing. This is always `1` for ERC-721 tokens.
@@ -405,6 +410,8 @@ pub struct ItemReceivedOfferData {
     /// Creator of the offer.
     #[serde(with = "address_fromjson")]
     pub maker: Address,
+    /// Hash id of the listing.
+    pub order_hash: H256,
     /// Token offered for payment.
     pub payment_token: PaymentToken,
     /// Number of items on the offer. This is always `1` for ERC-721 tokens.
@@ -433,6 +440,8 @@ pub struct ItemReceivedBidData {
     /// Creator of the bid.
     #[serde(with = "address_fromjson")]
     pub maker: Address,
+    /// Hash id of the listing.
+    pub order_hash: H256,
     /// Token offered for payment.
     pub payment_token: PaymentToken,
     /// Number of items on the offer. This is always `1` for ERC-721 tokens.
