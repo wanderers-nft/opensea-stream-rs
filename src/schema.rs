@@ -43,6 +43,8 @@ pub enum Payload {
     ItemReceivedBid(ItemReceivedBidData),
     /// A collection has received an offer.
     CollectionOffer(CollectionOfferData),
+    /// A collection has received a trait offer.
+    TraitOffer(TraitOfferData),
 }
 
 impl From<Payload> for Event {
@@ -56,6 +58,7 @@ impl From<Payload> for Event {
             Payload::ItemReceivedOffer(_) => Event::ItemReceivedOffer,
             Payload::ItemReceivedBid(_) => Event::ItemReceivedBid,
             Payload::CollectionOffer(_) => Event::CollectionOffer,
+            Payload::TraitOffer(_) => Event::TraitOffer,
         }
     }
 }
@@ -487,6 +490,42 @@ pub struct CollectionOfferData {
     pub collection_criteria: serde_json::Value,
     /// Asset contract criteria.
     pub asset_contract_criteria: serde_json::Value,
+}
+
+/// Payload data for [`Payload::TraitOffer`].
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct TraitOfferData {
+    /// Context
+    #[serde(flatten)]
+    pub context: Context,
+
+    /// Timestamp of when the bid was received.
+    pub event_timestamp: DateTime<Utc>,
+    /// Bid price. See `payment_token` for the actual value of each unit.
+    #[serde(with = "u256_fromstr_radix_10")]
+    pub base_price: U256,
+    /// Timestamp of when the bid was created.
+    pub created_date: DateTime<Utc>,
+    /// Timestamp of when the bid will expire.
+    pub expiration_date: DateTime<Utc>,
+    /// Creator of the bid.
+    #[serde(with = "address_fromjson")]
+    pub maker: Address,
+    /// Hash id of the listing.
+    pub order_hash: H256,
+    /// Token offered for payment.
+    pub payment_token: PaymentToken,
+    /// Number of items on the offer. This is always `1` for ERC-721 tokens.
+    pub quantity: u64,
+    /// Taker of the bid.
+    #[serde(with = "address_fromjson_opt", default)]
+    pub taker: Option<Address>,
+    /// Collection criteria.
+    pub collection_criteria: serde_json::Value,
+    /// Asset contract criteria.
+    pub asset_contract_criteria: serde_json::Value,
+    /// Trait criteria.
+    pub trait_criteria: serde_json::Value,
 }
 
 /// Auctioning system used by the listing.
