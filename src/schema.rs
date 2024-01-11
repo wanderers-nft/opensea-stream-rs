@@ -182,28 +182,54 @@ mod chain {
 
     /// Network an item is on.
     #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
-    #[serde(tag = "name", rename_all = "lowercase")]
+    #[serde(tag = "name", rename_all = "snake_case")]
     #[non_exhaustive]
     pub enum Chain {
-        /// [Ethereum](https://ethereum.org) mainnet.
+        /// Ethereum Mainnet
         Ethereum,
-        /// [Polygon](https://polygon.technology/solutions/polygon-pos) mainnet.
+        /// Polygon Matic
         #[serde(rename = "matic")]
         Polygon,
-        /// [Klaytn](https://www.klaytn.foundation/) mainnet.
+        /// Klaytn
         Klaytn,
-        /// [Solana](https://solana.com/) mainnet. This variant (and all events for Solana assets) are not supported in this version.
+        /// BNB Chain
+        Bnb,
+        /// Arbitrum
+        Arbitrum,
+        /// Arbitrum Nova
+        ArbitrumNova,
+        /// Avalanche
+        Avalanche,
+        /// Optimism
+        Optimism,
+        /// Solana mainnet. This variant (and all events for Solana assets) are not supported in this version.
         Solana,
+        /// Base
+        Base,
+        /// Zora
+        Zora,
 
-        /// [Goerli](https://ethereum.org/en/developers/docs/networks/#goerli) testnet (of Ethereum).
-        Goerli,
-        /// [Rinkeby](https://ethereum.org/en/developers/docs/networks/#rinkeby) testnet (of Ethereum).
-        #[deprecated = "OpenSea no longer supports Rinkeby as the testnet has been deprecated for The Merge."]
-        Rinkeby,
-        /// [Mumbai](https://docs.polygon.technology/docs/develop/network-details/network#mumbai-pos-testnet) testnet (of Polygon).
+        /// Sepolia
+        Sepolia,
+        /// Polygon Mumbai
         Mumbai,
-        /// [Baobab](https://www.klaytn.foundation/) testnet (of Klaytn).
+        /// Klaytn Baobab
         Baobab,
+        /// BNB Testnet
+        #[serde(rename = "bsctestnet")]
+        BscTestnet,
+        /// Arbitrum Sepolia
+        ArbitrumSepolia,
+        /// Avalanche Fuji
+        AvalancheFuji,
+        /// Optimism Sepolia
+        OptimismSepolia,
+        /// Solana Devnet. This variant (and all events for Solana assets) are not supported in this version.
+        Soldev,
+        /// Base Sepolia
+        BaseSepolia,
+        /// Zora Sepolia
+        ZoraSepolia,
     }
 }
 pub use chain::Chain;
@@ -216,11 +242,24 @@ impl FromStr for Chain {
             "ethereum" => Ok(Chain::Ethereum),
             "matic" => Ok(Chain::Polygon),
             "klaytn" => Ok(Chain::Klaytn),
+            "bsc" => Ok(Chain::Bnb),
+            "arbitrum" => Ok(Chain::Arbitrum),
+            "arbitrum_nova" => Ok(Chain::ArbitrumNova),
+            "avalanche" => Ok(Chain::Avalanche),
+            "optimism" => Ok(Chain::Optimism),
             "solana" => Ok(Chain::Solana),
-            #[allow(deprecated)]
-            "rinkeby" => Ok(Chain::Rinkeby),
+            "base" => Ok(Chain::Base),
+            "zora" => Ok(Chain::Zora),
+            "sepolia" => Ok(Chain::Sepolia),
             "mumbai" => Ok(Chain::Mumbai),
             "baobab" => Ok(Chain::Baobab),
+            "bsctestnet" => Ok(Chain::BscTestnet),
+            "arbitrum_sepolia" => Ok(Chain::ArbitrumSepolia),
+            "avalanche_fuji" => Ok(Chain::AvalancheFuji),
+            "optimism_sepolia" => Ok(Chain::OptimismSepolia),
+            "soldev" => Ok(Chain::Soldev),
+            "base_sepolia" => Ok(Chain::BaseSepolia),
+            "zora_sepolia" => Ok(Chain::ZoraSepolia),
             _ => Err(()),
         }
     }
@@ -235,12 +274,24 @@ impl fmt::Display for Chain {
                 Chain::Ethereum => "ethereum",
                 Chain::Polygon => "matic",
                 Chain::Klaytn => "klaytn",
+                Chain::Bnb => "bsc",
+                Chain::Arbitrum => "arbitrum",
+                Chain::ArbitrumNova => "arbitrum_nova",
+                Chain::Avalanche => "avalanche",
+                Chain::Optimism => "optimism",
                 Chain::Solana => "solana",
-                #[allow(deprecated)]
-                Chain::Rinkeby => "rinkeby",
+                Chain::Base => "base",
+                Chain::Zora => "zora",
+                Chain::Sepolia => "sepolia",
                 Chain::Mumbai => "mumbai",
                 Chain::Baobab => "baobab",
-                Chain::Goerli => "goerli",
+                Chain::BscTestnet => "bsctestnet",
+                Chain::ArbitrumSepolia => "arbitrum_sepolia",
+                Chain::AvalancheFuji => "avalanche_fuji",
+                Chain::OptimismSepolia => "optimism_sepolia",
+                Chain::Soldev => "soldev",
+                Chain::BaseSepolia => "base_sepolia",
+                Chain::ZoraSepolia => "zora_sepolia",
             }
         )
     }
