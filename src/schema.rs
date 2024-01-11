@@ -25,6 +25,7 @@ pub struct StreamEvent {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "event_type", content = "payload")]
 #[serde(rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum Payload {
     /// An item has been listed for sale.
     ItemListed(ItemListedData),
@@ -40,6 +41,10 @@ pub enum Payload {
     ItemReceivedOffer(ItemReceivedOfferData),
     /// An item has received a bid.
     ItemReceivedBid(ItemReceivedBidData),
+    /// A collection has received an offer.
+    CollectionOffer(CollectionOfferData),
+    /// A collection has received a trait offer.
+    TraitOffer(TraitOfferData),
 }
 
 impl From<Payload> for Event {
@@ -52,6 +57,8 @@ impl From<Payload> for Event {
             Payload::ItemCancelled(_) => Event::ItemCancelled,
             Payload::ItemReceivedOffer(_) => Event::ItemReceivedOffer,
             Payload::ItemReceivedBid(_) => Event::ItemReceivedBid,
+            Payload::CollectionOffer(_) => Event::CollectionOffer,
+            Payload::TraitOffer(_) => Event::TraitOffer,
         }
     }
 }
@@ -175,28 +182,54 @@ mod chain {
 
     /// Network an item is on.
     #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
-    #[serde(tag = "name", rename_all = "lowercase")]
+    #[serde(tag = "name", rename_all = "snake_case")]
     #[non_exhaustive]
     pub enum Chain {
-        /// [Ethereum](https://ethereum.org) mainnet.
+        /// Ethereum Mainnet
         Ethereum,
-        /// [Polygon](https://polygon.technology/solutions/polygon-pos) mainnet.
+        /// Polygon Matic
         #[serde(rename = "matic")]
         Polygon,
-        /// [Klaytn](https://www.klaytn.foundation/) mainnet.
+        /// Klaytn
         Klaytn,
-        /// [Solana](https://solana.com/) mainnet. This variant (and all events for Solana assets) are not supported in this version.
+        /// BNB Chain
+        Bnb,
+        /// Arbitrum
+        Arbitrum,
+        /// Arbitrum Nova
+        ArbitrumNova,
+        /// Avalanche
+        Avalanche,
+        /// Optimism
+        Optimism,
+        /// Solana mainnet. This variant (and all events for Solana assets) are not supported in this version.
         Solana,
+        /// Base
+        Base,
+        /// Zora
+        Zora,
 
-        /// [Goerli](https://ethereum.org/en/developers/docs/networks/#goerli) testnet (of Ethereum).
-        Goerli,
-        /// [Rinkeby](https://ethereum.org/en/developers/docs/networks/#rinkeby) testnet (of Ethereum).
-        #[deprecated = "OpenSea no longer supports Rinkeby as the testnet has been deprecated for The Merge."]
-        Rinkeby,
-        /// [Mumbai](https://docs.polygon.technology/docs/develop/network-details/network#mumbai-pos-testnet) testnet (of Polygon).
+        /// Sepolia
+        Sepolia,
+        /// Polygon Mumbai
         Mumbai,
-        /// [Baobab](https://www.klaytn.foundation/) testnet (of Klaytn).
+        /// Klaytn Baobab
         Baobab,
+        /// BNB Testnet
+        #[serde(rename = "bsctestnet")]
+        BscTestnet,
+        /// Arbitrum Sepolia
+        ArbitrumSepolia,
+        /// Avalanche Fuji
+        AvalancheFuji,
+        /// Optimism Sepolia
+        OptimismSepolia,
+        /// Solana Devnet. This variant (and all events for Solana assets) are not supported in this version.
+        Soldev,
+        /// Base Sepolia
+        BaseSepolia,
+        /// Zora Sepolia
+        ZoraSepolia,
     }
 }
 pub use chain::Chain;
@@ -209,11 +242,24 @@ impl FromStr for Chain {
             "ethereum" => Ok(Chain::Ethereum),
             "matic" => Ok(Chain::Polygon),
             "klaytn" => Ok(Chain::Klaytn),
+            "bsc" => Ok(Chain::Bnb),
+            "arbitrum" => Ok(Chain::Arbitrum),
+            "arbitrum_nova" => Ok(Chain::ArbitrumNova),
+            "avalanche" => Ok(Chain::Avalanche),
+            "optimism" => Ok(Chain::Optimism),
             "solana" => Ok(Chain::Solana),
-            #[allow(deprecated)]
-            "rinkeby" => Ok(Chain::Rinkeby),
+            "base" => Ok(Chain::Base),
+            "zora" => Ok(Chain::Zora),
+            "sepolia" => Ok(Chain::Sepolia),
             "mumbai" => Ok(Chain::Mumbai),
             "baobab" => Ok(Chain::Baobab),
+            "bsctestnet" => Ok(Chain::BscTestnet),
+            "arbitrum_sepolia" => Ok(Chain::ArbitrumSepolia),
+            "avalanche_fuji" => Ok(Chain::AvalancheFuji),
+            "optimism_sepolia" => Ok(Chain::OptimismSepolia),
+            "soldev" => Ok(Chain::Soldev),
+            "base_sepolia" => Ok(Chain::BaseSepolia),
+            "zora_sepolia" => Ok(Chain::ZoraSepolia),
             _ => Err(()),
         }
     }
@@ -228,12 +274,24 @@ impl fmt::Display for Chain {
                 Chain::Ethereum => "ethereum",
                 Chain::Polygon => "matic",
                 Chain::Klaytn => "klaytn",
+                Chain::Bnb => "bsc",
+                Chain::Arbitrum => "arbitrum",
+                Chain::ArbitrumNova => "arbitrum_nova",
+                Chain::Avalanche => "avalanche",
+                Chain::Optimism => "optimism",
                 Chain::Solana => "solana",
-                #[allow(deprecated)]
-                Chain::Rinkeby => "rinkeby",
+                Chain::Base => "base",
+                Chain::Zora => "zora",
+                Chain::Sepolia => "sepolia",
                 Chain::Mumbai => "mumbai",
                 Chain::Baobab => "baobab",
-                Chain::Goerli => "goerli",
+                Chain::BscTestnet => "bsctestnet",
+                Chain::ArbitrumSepolia => "arbitrum_sepolia",
+                Chain::AvalancheFuji => "avalanche_fuji",
+                Chain::OptimismSepolia => "optimism_sepolia",
+                Chain::Soldev => "soldev",
+                Chain::BaseSepolia => "base_sepolia",
+                Chain::ZoraSepolia => "zora_sepolia",
             }
         )
     }
@@ -279,6 +337,8 @@ pub struct ItemListedData {
     /// Creator of the listing.
     #[serde(with = "address_fromjson")]
     pub maker: Address,
+    /// Hash id of the listing.
+    pub order_hash: H256,
     /// Token accepted for payment.
     pub payment_token: PaymentToken,
     /// Number of items on sale. This is always `1` for ERC-721 tokens.
@@ -376,6 +436,11 @@ pub struct ItemCancelledData {
     pub event_timestamp: DateTime<Utc>,
     /// Type of listing. `None` indicates the listing would've been a buyout.
     pub listing_type: Option<ListingType>,
+    /// Creator of the cancellation order.
+    #[serde(with = "address_fromjson")]
+    pub maker: Address,
+    /// Hash id of the listing.
+    pub order_hash: H256,
     /// Token accepted for payment.
     pub payment_token: PaymentToken,
     /// Number of items in listing. This is always `1` for ERC-721 tokens.
@@ -403,6 +468,8 @@ pub struct ItemReceivedOfferData {
     /// Creator of the offer.
     #[serde(with = "address_fromjson")]
     pub maker: Address,
+    /// Hash id of the listing.
+    pub order_hash: H256,
     /// Token offered for payment.
     pub payment_token: PaymentToken,
     /// Number of items on the offer. This is always `1` for ERC-721 tokens.
@@ -431,6 +498,8 @@ pub struct ItemReceivedBidData {
     /// Creator of the bid.
     #[serde(with = "address_fromjson")]
     pub maker: Address,
+    /// Hash id of the listing.
+    pub order_hash: H256,
     /// Token offered for payment.
     pub payment_token: PaymentToken,
     /// Number of items on the offer. This is always `1` for ERC-721 tokens.
@@ -438,6 +507,76 @@ pub struct ItemReceivedBidData {
     /// Taker of the bid.
     #[serde(with = "address_fromjson_opt", default)]
     pub taker: Option<Address>,
+}
+
+/// Payload data for [`Payload::CollectionOffer`].
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct CollectionOfferData {
+    /// Context
+    #[serde(flatten)]
+    pub context: Context,
+
+    /// Timestamp of when the bid was received.
+    pub event_timestamp: DateTime<Utc>,
+    /// Bid price. See `payment_token` for the actual value of each unit.
+    #[serde(with = "u256_fromstr_radix_10")]
+    pub base_price: U256,
+    /// Timestamp of when the bid was created.
+    pub created_date: DateTime<Utc>,
+    /// Timestamp of when the bid will expire.
+    pub expiration_date: DateTime<Utc>,
+    /// Creator of the bid.
+    #[serde(with = "address_fromjson")]
+    pub maker: Address,
+    /// Hash id of the listing.
+    pub order_hash: H256,
+    /// Token offered for payment.
+    pub payment_token: PaymentToken,
+    /// Number of items on the offer. This is always `1` for ERC-721 tokens.
+    pub quantity: u64,
+    /// Taker of the bid.
+    #[serde(with = "address_fromjson_opt", default)]
+    pub taker: Option<Address>,
+    /// Collection criteria.
+    pub collection_criteria: serde_json::Value,
+    /// Asset contract criteria.
+    pub asset_contract_criteria: serde_json::Value,
+}
+
+/// Payload data for [`Payload::TraitOffer`].
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct TraitOfferData {
+    /// Context
+    #[serde(flatten)]
+    pub context: Context,
+
+    /// Timestamp of when the bid was received.
+    pub event_timestamp: DateTime<Utc>,
+    /// Bid price. See `payment_token` for the actual value of each unit.
+    #[serde(with = "u256_fromstr_radix_10")]
+    pub base_price: U256,
+    /// Timestamp of when the bid was created.
+    pub created_date: DateTime<Utc>,
+    /// Timestamp of when the bid will expire.
+    pub expiration_date: DateTime<Utc>,
+    /// Creator of the bid.
+    #[serde(with = "address_fromjson")]
+    pub maker: Address,
+    /// Hash id of the listing.
+    pub order_hash: H256,
+    /// Token offered for payment.
+    pub payment_token: PaymentToken,
+    /// Number of items on the offer. This is always `1` for ERC-721 tokens.
+    pub quantity: u64,
+    /// Taker of the bid.
+    #[serde(with = "address_fromjson_opt", default)]
+    pub taker: Option<Address>,
+    /// Collection criteria.
+    pub collection_criteria: serde_json::Value,
+    /// Asset contract criteria.
+    pub asset_contract_criteria: serde_json::Value,
+    /// Trait criteria.
+    pub trait_criteria: serde_json::Value,
 }
 
 /// Auctioning system used by the listing.

@@ -80,6 +80,7 @@ impl From<Network> for Url {
 /// [`Payload`](crate::schema::Payload).
 #[derive(Clone, Copy, Serialize, Deserialize, Debug, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum Event {
     /// An item been listed for sale.
     ItemListed,
@@ -95,4 +96,8 @@ pub enum Event {
     ItemReceivedOffer,
     /// An item has received a bid.
     ItemReceivedBid,
+    /// A collection has received an offer.
+    CollectionOffer,
+    /// A collection has received a trait offer.
+    TraitOffer,
 }
